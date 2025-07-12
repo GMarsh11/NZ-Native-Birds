@@ -1,534 +1,470 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Explore New Zealand Native Birds</title>
-    <!-- Tailwind CSS CDN -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
-    <style>
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #f0fdf4; /* Light green background */
+import React, { useState, useEffect, useCallback } from 'react';
+
+// Define the spelling rules and words for each year group, extracted and refined from "Liz Kane - The Code (latest version -2022) .pdf".
+const spellingRulesData = {
+  'Year 1': [
+    { id: 'Y1L1a', rule: "List 1a: Closed syllable VC and CVC", words: ["at", "cat", "mat", "sit", "map", "pit"] },
+    { id: 'Y1L1b', rule: "List 1b: Closed syllable VC and CVC", words: ["on", "big", "dog", "hot", "top", "in"] },
+    { id: 'Y1L1c', rule: "List 1c: Closed syllable VC and CVC", words: ["bed", "end", "ran", "ten", "yes", "get"] },
+    { id: 'Y1L1d', rule: "List 1d: Closed syllable VC and CVC", words: ["us", "up", "but", "fun", "mum", "bus"] },
+    { id: 'Y1L2', rule: "List 2: Closed syllable with digraphs (th, sh, ch, wh, ng)", words: ["then", "shop", "much", "when", "long", "with"] },
+    { id: 'Y1L3', rule: "List 3: Open Syllable", words: ["be", "me", "we", "go", "so", "no"] },
+    { id: 'Y1L4', rule: "List 4: Longer spelling of /k/ is -ck", words: ["duck", "rock", "back", "sick", "check", "quick"] },
+    { id: 'Y1L5_s', rule: "List 5: Adding the suffix '-s'", words: ["cats", "dogs", "runs", "sits"] },
+    { id: 'Y1L5_ing', rule: "List 5: Adding the suffix '-ing'", words: ["looking", "running", "hopping", "skipping"] },
+  ],
+  'Year 2': [
+    { id: 'Y2L6a', rule: "List 6a: CCVC in one Syllable Words", words: ["plan", "swim", "frog", "clap", "drum", "grin"] },
+    { id: 'Y2L6b', rule: "List 6b: CVCC in one Syllable Words", words: ["hand", "lamp", "desk", "tent", "belt", "milk"] },
+    { id: 'Y2L6c', rule: "List 6c: CCVCC in one Syllable Words", words: ["clamp", "crisp", "stump", "tramp", "blimp", "frisk"] },
+    { id: 'Y2L7', rule: "List 7: Floss Rule (ff, ll, ss, zz)", words: ["puff", "hill", "mess", "fizz", "tell", "pass"] },
+    { id: 'Y2L8', rule: "List 8: Silent e / VCe Syllable (a_e, i_e, o_e, u_e)", words: ["make", "like", "home", "cute", "time", "rule"] },
+    { id: 'Y2L9', rule: "List 9: 'c' or 'k' for /k/ sound", words: ["cat", "kit", "king", "coat", "key", "cut"] },
+    { id: 'Y2L10', rule: "List 10: Vowel Teams 'ai' 'ay' (long /a/)", words: ["rain", "play", "wait", "day", "train", "say"] },
+    { id: 'Y2L11', rule: "List 11: Digraph 'ph' (/f/ sound)", words: ["phone", "photo", "graph", "elephant", "dolphin", "alphabet"] },
+    { id: 'Y2L12', rule: "List 12: Vowel Teams 'ou' 'ow' (/ou/ sound)", words: ["out", "cow", "loud", "now", "house", "brown"] },
+    { id: 'Y2L13_s', rule: "List 13: Adding the suffix '-s'", words: ["walks", "jumps", "plays"] },
+    { id: 'Y2L13_ing', rule: "List 13: Adding the suffix '-ing'", words: ["walking", "jumping", "playing"] },
+    { id: 'Y2L13_ed', rule: "List 13: Adding the suffix '-ed'", words: ["walked", "jumped", "played"] },
+    { id: 'Y2L14', rule: "List 14: Contractions 1", words: ["I'm", "you're", "it's", "don't", "can't", "isn't"] },
+    { id: 'Y2L15', rule: "List 15: Compound Words 1", words: ["sunshine", "cupcake", "rainbow", "toothbrush", "bedroom", "popcorn"] },
+    { id: 'Y2L16', rule: "List 16: Trigraph 'igh' (long /i/)", words: ["light", "night", "high", "right", "fight", "sigh"] },
+    { id: 'Y2L17', rule: "List 17: Soft 'c' and Soft 'g' 1", words: ["face", "city", "gem", "magic", "cage", "large"] },
+  ],
+  'Year 3': [
+    { id: 'Y3L18', rule: "List 18: R Controlled Syllable 'ar' and 'or'", words: ["car", "for", "farm", "short", "park", "horse"] },
+    { id: 'Y3L19', rule: "List 19: Final y for long /e/ and long /i/", words: ["happy", "fly", "baby", "sky", "funny", "try"] },
+    { id: 'Y3L20', rule: "List 20: Vowel Teams long /e/ 'ee' and 'ea'", words: ["tree", "read", "sleep", "team", "green", "clean"] },
+    { id: 'Y3L21', rule: "List 21: Vowel Teams long /o/ 'oa' and 'ow'", words: ["boat", "snow", "road", "grow", "coat", "show"] },
+    { id: 'Y3L22', rule: "List 22: Homophones 1", words: ["to/too/two", "their/there/they're", "your/you're", "by/buy/bye", "hear/here", "know/no"] },
+    { id: 'Y3L23', rule: "List 23: Vowel Team 'oo' (long/short)", words: ["moon", "book", "food", "look", "spoon", "cook"] },
+    { id: 'Y3L24', rule: "List 24: Compound Words 2", words: ["homework", "inside", "outside", "anything", "everyone", "playground"] },
+    { id: 'Y3L25', rule: "List 25: Three letter consonant clusters", words: ["splash", "street", "strong", "scratch", "spring", "thrill"] },
+    { id: 'Y3L26', rule: "List 26: Vowel Teams 'oi' and 'oy'", words: ["coin", "boy", "soil", "toy", "join", "enjoy"] },
+    { id: 'Y3L27', rule: "List 27: Contractions 2", words: ["you'll", "he'll", "what's", "where's", "who's", "that's"] },
+    { id: 'Y3L28_er', rule: "List 28: R Controlled Syllable 'er'", words: ["her", "fern", "teacher"] },
+    { id: 'Y3L28_ir', rule: "List 28: R Controlled Syllable 'ir'", words: ["bird", "shirt", "girl"] },
+    { id: 'Y3L28_ur', rule: "List 28: R Controlled Syllable 'ur'", words: ["fur", "burn", "turn"] },
+    { id: 'Y3L29', rule: "List 29: Syllable Division - Trumpet Rule (VCCV)", words: ["trumpet", "rabbit", "muffin", "kitten", "button", "lesson"] },
+    { id: 'Y3L30', rule: "List 30: Schwa Vowel 1", words: ["about", "banana", "sofa", "again", "camera", "problem"] },
+    { id: 'Y3L31', rule: "List 31: Prefix 'un-'", words: ["unhappy", "undo", "unpack", "unfold", "uncover", "unlucky"] },
+    { id: 'Y3L32_ly', rule: "List 32: Suffix '-ly'", words: ["quickly", "happily", "slowly"] },
+    { id: 'Y3L32_er', rule: "List 32: Suffix '-er'", words: ["faster", "teacher", "bigger"] },
+    { id: 'Y3L32_est', rule: "List 32: Suffix '-est'", words: ["tallest", "biggest", "longest"] },
+    { id: 'Y3L33', rule: "List 33: Trigraph 'tch'", words: ["catch", "watch", "match", "ditch", "witch", "scratch"] },
+  ],
+  'Year 4': [
+    { id: 'Y4L34a_long_e', rule: "List 34a: 'ea' as long /e/", words: ["read", "team"] },
+    { id: 'Y4L34a_short_e', rule: "List 34a: 'ea' as short /e/", words: ["bread", "head"] },
+    { id: 'Y4L34a_long_a', rule: "List 34a: 'ea' as long /a/", words: ["great", "break"] },
+    { id: 'Y4L34b', rule: "List 34b: Vowel Team long /e/ 'ey'", words: ["key", "money", "monkey", "valley", "donkey", "journey"] },
+    { id: 'Y4L34c', rule: "List 34c: Vowel Team long /i/ 'ie'", words: ["pie", "tie", "lie", "cried", "tried", "flies"] },
+    { id: 'Y4L34d', rule: "List 34d: Vowel Team long /o/ 'oe'", words: ["toe", "hoe", "goes", "heroes", "potatoes", "tomatoes"] },
+    { id: 'Y4L34e', rule: "List 34e: Vowel Team long /u/ 'ew'", words: ["new", "few", "chew", "stew", "crew", "flew"] },
+    { id: 'Y4L35', rule: "List 35: Homophones 2", words: ["knight/night", "mail/male", "meat/meet", "one/won", "peace/piece", "read/red"] },
+    { id: 'Y4L36', rule: "List 36: Vowel Teams 'au' 'aw' for /or/", words: ["caught", "saw", "autumn", "draw", "taught", "paw"] },
+    { id: 'Y4L37', rule: "List 37: Trigraph 'dge'", words: ["badge", "judge", "hedge", "edge", "lodge", "bridge"] },
+    { id: 'Y4L38', rule: "List 38: Vowel Teams 'ew' 'ue' for /oo/", words: ["flew", "blue", "grew", "true", "chew", "clue"] },
+    { id: 'Y4L39', rule: "List 39: Syllable Division Tiger Rule (VCV)", words: ["tiger", "pilot", "silent", "robot", "music", "paper"] },
+    { id: 'Y4L40', rule: "List 40: CVC Doubling Rule", words: ["running", "hopping", "bigger", "swimming", "stopping", "cutting"] },
+    { id: 'Y4L41_re', rule: "List 41: Prefix 're-'", words: ["redo", "return", "rebuild"] },
+    { id: 'Y4L41_dis', rule: "List 41: Prefix 'dis-'", words: ["dislike", "disagree", "disappear"] },
+    { id: 'Y4L42', rule: "List 42: Syllable Division Camel Rule (VCCV)", words: ["camel", "rabbit", "muffin", "button", "dinner", "lesson"] },
+    { id: 'Y4L43_ful', rule: "List 43: Suffix '-ful'", words: ["careful", "helpful", "joyful"] },
+    { id: 'Y4L43_less', rule: "List 43: Suffix '-less'", words: ["careless", "helpless", "joyless"] },
+    { id: 'Y4L44', rule: "List 44: Silent e plus Suffix Rule", words: ["baking", "safely", "making", "nicely", "riding", "bravely"] },
+    { id: 'Y4L45', rule: "List 45: Consonant-le Syllable", words: ["table", "apple", "little", "purple", "candle", "simple"] },
+  ],
+  'Year 5/6': [
+    { id: 'Y5L46a', rule: "List 46a: Long /a/ 'eigh'", words: ["eight", "sleigh", "weigh", "freight", "neighbor", "straight"] },
+    { id: 'Y5L46b', rule: "List 46b: Vowel Team Long /e/ 'ie'", words: ["field", "chief", "belief", "piece", "relieve", "achieve"] },
+    { id: 'Y5L46c_long_o', rule: "List 46c: 'ough' as long /o/", words: ["though", "although", "dough"] },
+    { id: 'Y5L46c_or', rule: "List 46c: 'ough' as /or/", words: ["fought", "bought", "brought", "thought"] },
+    { id: 'Y5L46c_ow', rule: "List 46c: 'ough' as /ow/ as in plough", words: ["plough", "bough", "drought", "slough"] },
+    { id: 'Y5L46d', rule: "List 46d: Vowel Team Long /u/ 'ue'", words: ["blue", "true", "clue", "rescue", "value", "argue"] },
+    { id: 'Y5L47', rule: "List 47: Soft 'c' and Soft 'g' 2", words: ["juice", "citizen", "giraffe", "danger", "decide", "message"] },
+    { id: 'Y5L48', rule: "List 48: Homophones 3", words: ["aisle/isle", "allowed/aloud", "board/bored", "coarse/course", "compliment/complement", "council/counsel"] },
+    { id: 'Y5L49_semi', rule: "List 49: Prefix 'semi-'", words: ["semicircle", "semifinal"] },
+    { id: 'Y5L49_sub', rule: "List 49: Prefix 'sub-'", words: ["submarine", "subway"] },
+    { id: 'Y5L49_mis', rule: "List 49: Prefix 'mis-'", words: ["mistake", "misplace"] },
+    { id: 'Y5L49_multi', rule: "List 49: Prefix 'multi-'", words: ["multiply", "multimedia"] },
+    { id: 'Y5L49_pre', rule: "List 49: Prefix 'pre-'", words: ["preview", "prepare"] },
+    { id: 'Y5L50', rule: "List 50: Contractions 3", words: ["who'd", "what's", "where's", "that's", "there's", "he'll"] },
+    { id: 'Y5L51_air', rule: "List 51: 'air' spelling", words: ["air", "chair"] },
+    { id: 'Y5L51_are', rule: "List 51: 'are' spelling", words: ["care", "share"] },
+    { id: 'Y5L51_ear', rule: "List 51: 'ear' spelling", words: ["bear", "wear"] },
+    { id: 'Y5L52', rule: "List 52: Y Rule - Keep it or Change it", words: ["happier", "playing", "cities", "carried", "enjoying", "studies"] },
+    { id: 'Y5L53_tion', rule: "List 53: Suffix '-tion'", words: ["action", "station", "fiction"] },
+    { id: 'Y5L53_sion', rule: "List 53: Suffix '-sion'", words: ["tension", "vision", "explosion"] },
+    { id: 'Y5L53_cian', rule: "List 53: Suffix '-cian'", words: ["musician", "magician", "electrician"] },
+    { id: 'Y5L54_wr', rule: "List 54: Silent 'w' in 'wr'", displaySound: 'wr', words: ["write", "wrong", "wrap", "wrist"] },
+    { id: 'Y5L54_kn', rule: "List 54: Silent 'k' in 'kn'", displaySound: 'kn', words: ["know", "knife", "knee", "knock"] },
+    { id: 'Y5L54_sc', rule: "List 54: Silent 'c' in 'sc'", displaySound: 'sc', words: ["science", "scene", "scissors", "muscle"] },
+    { id: 'Y5L54_mb', rule: "List 54: Silent 'b' in 'mb'", displaySound: 'mb', words: ["comb", "thumb", "lamb", "climb"] },
+    { id: 'Y5L55', rule: "List 55: Schwa Vowel 2", words: ["family", "animal", "camera", "banana", "problem", "system"] },
+    { id: 'Y5L56', rule: "List 56: Plural of words ending in 'f' or 'fe'", words: ["wolves", "knives", "leaves", "lives", "halves", "shelves"] },
+  ],
+  'Year 7/8': [
+    { id: 'Y7L57a', rule: "List 57a: Vowel Team Long /a/ ei", words: ["veil", "vein", "weigh", "beige", "feign", "reign"] },
+    { id: 'Y7L57b', rule: "List 57b: Vowel Team Long /e/ 'ei'", words: ["receive", "deceive", "conceive", "ceiling", "seize", "weird"] },
+    { id: 'Y7L58', rule: "List 58: Vowel Team 'ou' as short /u/", words: ["young", "rough", "tough", "enough", "country", "cousin"] },
+    { id: 'Y7L59_gh_f', rule: "List 59: 'gh' as /f/", words: ["rough", "tough", "cough"] },
+    { id: 'Y7L59_ph_f', rule: "List 59: 'ph' as /f/", words: ["phone", "photo", "graph"] },
+    { id: 'Y7L60', rule: "List 60: Letter 'a' as short /o/", words: ["was", "want", "watch", "squash", "quality", "water"] },
+    { id: 'Y7L61_trans', rule: "List 61: Prefix 'trans-'", words: ["transport", "transfer"] },
+    { id: 'Y7L61_non', rule: "List 61: Prefix 'non-'", words: ["nonfiction", "nonsense"] },
+    { id: 'Y7L61_fore', rule: "List 61: Prefix 'fore-'", words: ["foretell", "forecast"] },
+    { id: 'Y7L61_inter', rule: "List 61: Prefix 'inter-'", words: ["international", "interact"] },
+    { id: 'Y7L61_over', rule: "List 61: Prefix 'over-'", words: ["overcoat", "overcome"] },
+    { id: 'Y7L62_ch_ch', rule: "List 62: 'ch' as /ch/", words: ["chair", "much"] },
+    { id: 'Y7L62_ch_k', rule: "List 62: 'ch' as /k/", words: ["school", "stomach"] },
+    { id: 'Y7L62_ch_sh', rule: "List 62: 'ch' as /sh/", words: ["chef", "machine"] },
+    { id: 'Y7L63', rule: "List 63: 'or' as /er/ in worm", words: ["worm", "work", "word", "world", "worse", "worth"] },
+    { id: 'Y7L64', rule: "List 64: Plurals with irregular spellings", words: ["children", "men", "feet", "mice", "oxen", "sheep"] },
+    { id: 'Y7L65_gn_n', rule: "List 65: 'gn' as /n/", words: ["gnaw", "sign", "gnome", "design"] },
+    { id: 'Y7L65_gh_g', rule: "List 65: 'gh' as /g/", words: ["ghost", "ghastly"] },
+    { id: 'Y7L66', rule: "List 66: Latin and Greek root words", words: ["audience", "transport", "biology", "geology", "photograph", "telephone"] },
+    { id: 'Y7L67_uni', rule: "List 67: Prefix 'uni-'", words: ["unicorn", "unicycle"] },
+    { id: 'Y7L67_bi', rule: "List 67: Prefix 'bi-'", words: ["bicycle", "bilingual"] },
+    { id: 'Y7L67_tri', rule: "List 67: Prefix 'tri-'", words: ["triangle", "tripod"] },
+    { id: 'Y7L68_able', rule: "List 68: Suffix '-able'", words: ["enjoyable", "readable", "lovable"] },
+    { id: 'Y7L68_ible', rule: "List 68: Suffix '-ible'", words: ["sensible", "possible", "terrible"] },
+    { id: 'Y7L69', rule: "List 69: Suffix '-ure'", words: ["picture", "future", "capture", "adventure", "feature", "mixture"] },
+  ],
+};
+
+// Utility function to shuffle an array
+const shuffleArray = (array) => {
+  let currentIndex = array.length, randomIndex;
+  while (currentIndex !== 0) {
+    randomIndex = Math.floor(Math.random() * currentIndex);
+    currentIndex--;
+    [array[currentIndex], array[randomIndex]] = [
+      array[randomIndex], array[currentIndex]];
+  }
+  return array;
+};
+
+// Function to extract the sound rule (e.g., 'ea', 'ey') from rule object
+const extractSoundRule = (rule) => {
+  if (rule.displaySound) {
+    return rule.displaySound;
+  }
+  const match = rule.rule.match(/'([^']+)'/); // Matches content inside single quotes
+  return match ? match[1] : null; // Return the captured group (the content inside quotes)
+};
+
+const App = () => {
+  const [selectedYear, setSelectedYear] = useState('');
+  const [availableRules, setAvailableRules] = useState([]);
+  const [selectedRuleIds, setSelectedRuleIds] = useState({});
+  const [shuffledRulesToDisplay, setShuffledRulesToDisplay] = useState([]);
+  const [currentRuleIndex, setCurrentRuleIndex] = useState(0);
+  const [generatedSentences, setGeneratedSentences] = useState(null);
+  const [loadingSentences, setLoadingSentences] = useState(false); // New loading state
+
+  // Declare currentRule, hasSelectedRules, and currentDisplaySound here
+  const currentRule = shuffledRulesToDisplay[currentRuleIndex];
+  const hasSelectedRules = Object.values(selectedRuleIds).some(isSelected => isSelected);
+  const currentDisplaySound = currentRule ? extractSoundRule(currentRule) : null;
+
+  // Effect to update available rules and reset selections when year changes
+  useEffect(() => {
+    if (selectedYear) {
+      const rulesForYear = spellingRulesData[selectedYear] || [];
+      setAvailableRules(rulesForYear);
+      const initialSelected = rulesForYear.reduce((acc, rule) => {
+        acc[rule.id] = false;
+        return acc;
+      }, {});
+      setSelectedRuleIds(initialSelected);
+      setShuffledRulesToDisplay([]);
+      setCurrentRuleIndex(0);
+      setGeneratedSentences(null); // Clear sentences on year change
+    } else {
+      setAvailableRules([]);
+      setSelectedRuleIds({});
+      setShuffledRulesToDisplay([]);
+      setCurrentRuleIndex(0);
+      setGeneratedSentences(null);
+    }
+  }, [selectedYear]);
+
+  // Effect to update shuffled rules when selected rules change
+  useEffect(() => {
+    const rulesToInclude = availableRules.filter(rule => selectedRuleIds[rule.id]);
+    setShuffledRulesToDisplay(shuffleArray([...rulesToInclude]));
+    setCurrentRuleIndex(0);
+    setGeneratedSentences(null); // Clear sentences when selected rules change
+  }, [selectedRuleIds, availableRules]);
+
+  // Handler for year dropdown change
+  const handleYearChange = (e) => {
+    setSelectedYear(e.target.value);
+  };
+
+  // Handler for individual rule checkbox change
+  const handleRuleToggle = (ruleId) => {
+    setSelectedRuleIds(prev => ({
+      ...prev,
+      [ruleId]: !prev[ruleId]
+    }));
+  };
+
+  // Function to display the next rule
+  const showNextRule = useCallback(() => {
+    if (shuffledRulesToDisplay.length === 0) return;
+    setCurrentRuleIndex((prevIndex) => (prevIndex + 1) % shuffledRulesToDisplay.length);
+    setGeneratedSentences(null); // Clear sentences when moving to next rule
+  }, [shuffledRulesToDisplay.length]);
+
+  // Function to generate practice sentences using Gemini API
+  const generatePracticeSentences = useCallback(async () => {
+    if (!currentRule || shuffledRulesToDisplay.length === 0) {
+      setGeneratedSentences(null);
+      return;
+    }
+
+    setLoadingSentences(true);
+    setGeneratedSentences(null); // Clear previous sentences
+
+    try {
+      const mainRuleWords = currentRule.words.join(', ');
+      const otherSelectedWords = shuffledRulesToDisplay
+        .filter(rule => rule.id !== currentRule.id && rule.words && rule.words.length > 0)
+        .map(rule => rule.words.join(', '))
+        .join(', ');
+
+      const prompt = `Generate three practice sentences for a spelling exercise.
+        The sentences should incorporate words from the primary spelling rule: "${currentRule.rule}" (words: ${mainRuleWords}).
+        Additionally, try to blend in words from other selected spelling rules from the same year group (other words available: ${otherSelectedWords}).
+        The sentences should increase in difficulty:
+        1. Mild: A simple sentence.
+        2. Medium: A compound sentence.
+        3. Spicy: A complex sentence.
+        Ensure all sentences are grammatically correct and make sense.
+        Provide the output as a JSON object with keys "mild", "medium", and "spicy".`;
+
+      let chatHistory = [];
+      chatHistory.push({ role: "user", parts: [{ text: prompt }] });
+
+      const payload = {
+        contents: chatHistory,
+        generationConfig: {
+          responseMimeType: "application/json",
+          responseSchema: {
+            type: "OBJECT",
+            properties: {
+              mild: { type: "STRING" },
+              medium: { type: "STRING" },
+              spicy: { type: "STRING" }
+            },
+            propertyOrdering: ["mild", "medium", "spicy"]
+          }
         }
-        .bird-content {
-            display: none; /* Hidden by default */
-        }
-        .bird-content.active {
-            display: block; /* Show active bird content */
-        }
-        /* Custom scrollbar for content area */
-        .content-area::-webkit-scrollbar {
-            width: 8px;
-        }
-        .content-area::-webkit-scrollbar-track {
-            background: #e0f2fe; /* Light blue track */
-            border-radius: 10px;
-        }
-        .content-area::-webkit-scrollbar-thumb {
-            background-color: #34d399; /* Emerald green thumb */
-            border-radius: 10px;
-            border: 2px solid #f0fdf4; /* Light green border */
-        }
-        .scrollable-content {
-            max-height: calc(100vh - 200px); /* Adjust based on header/footer size */
-            overflow-y: auto;
-        }
-    </style>
-</head>
-<body class="p-4 sm:p-6 md:p-8 lg:p-10 min-h-screen flex flex-col items-center justify-start">
-    <div class="w-full max-w-6xl bg-white rounded-lg shadow-xl p-6 sm:p-8 md:p-10 mb-8">
-        <h1 class="text-3xl sm:text-4xl md:text-5xl font-extrabold text-emerald-700 text-center mb-6">
-            Explore New Zealand Native Birds
+      };
+
+      const apiKey = ""; // Canvas will automatically provide the API key
+      const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      const result = await response.json();
+
+      if (result.candidates && result.candidates.length > 0 &&
+          result.candidates[0].content && result.candidates[0].content.parts &&
+          result.candidates[0].content.parts.length > 0) {
+        const jsonText = result.candidates[0].content.parts[0].text;
+        const parsedJson = JSON.parse(jsonText);
+        setGeneratedSentences(parsedJson);
+      } else {
+        console.error("Gemini API response structure unexpected:", result);
+        setGeneratedSentences({
+          mild: "Could not generate mild sentence.",
+          medium: "Could not generate medium sentence.",
+          spicy: "Could not generate spicy sentence."
+        });
+      }
+    } catch (error) {
+      console.error("Error generating sentences:", error);
+      setGeneratedSentences({
+        mild: "Error generating mild sentence.",
+        medium: "Error generating medium sentence.",
+        spicy: "Error generating spicy sentence."
+      });
+    } finally {
+      setLoadingSentences(false);
+    }
+  }, [currentRule, shuffledRulesToDisplay]);
+
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-blue-100 to-purple-200 flex flex-col items-center justify-center p-4"
+         style={{ fontFamily: "'Edu NSW ACT Foundation', cursive" }}>
+      {/* Google Fonts Import for Edu NSW ACT Foundation and Edu Australia VIC WA NT Hand Guides
+          These link tags should ideally be in the <head> of your public/index.html file
+          to avoid React errors and ensure fonts load correctly across the application. */}
+
+      <div className="bg-white p-8 rounded-2xl shadow-xl max-w-2xl w-full text-center">
+        <h1 className="text-4xl font-extrabold text-gray-800 mb-8">
+          Spelling Rule Shuffler
         </h1>
 
-        <!-- Navigation Buttons -->
-        <div class="flex flex-wrap justify-center gap-2 sm:gap-3 mb-8">
-            <button class="bird-nav-btn bg-emerald-500 hover:bg-emerald-600 text-white font-semibold py-2 px-4 rounded-full shadow-md transition duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-emerald-400" data-bird-id="kereru-content">Kererū</button>
-            <button class="bird-nav-btn bg-emerald-500 hover:bg-emerald-600 text-white font-semibold py-2 px-4 rounded-full shadow-md transition duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-emerald-400" data-bird-id="fantail-content">Fantail</button>
-            <button class="bird-nav-btn bg-emerald-500 hover:bg-emerald-600 text-white font-semibold py-2 px-4 rounded-full shadow-md transition duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-emerald-400" data-bird-id="pukeko-content">Pukeko</button>
-            <button class="bird-nav-btn bg-emerald-500 hover:bg-emerald-600 text-white font-semibold py-2 px-4 rounded-full shadow-md transition duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-emerald-400" data-bird-id="white-heron-content">White Heron</button>
-            <button class="bird-nav-btn bg-emerald-500 hover:bg-emerald-600 text-white font-semibold py-2 px-4 rounded-full shadow-md transition duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-emerald-400" data-bird-id="albatross-content">Albatross</button>
-            <button class="bird-nav-btn bg-emerald-500 hover:bg-emerald-600 text-white font-semibold py-2 px-4 rounded-full shadow-md transition duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-emerald-400" data-bird-id="kakariki-content">Kakariki</button>
-            <button class="bird-nav-btn bg-emerald-500 hover:bg-emerald-600 text-white font-semibold py-2 px-4 rounded-full shadow-md transition duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-emerald-400" data-bird-id="kingfisher-content">Kingfisher</button>
-            <button class="bird-nav-btn bg-emerald-500 hover:bg-emerald-600 text-white font-semibold py-2 px-4 rounded-full shadow-md transition duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-emerald-400" data-bird-id="bellbird-content">Bellbird</button>
-            <button class="bird-nav-btn bg-emerald-500 hover:bg-emerald-600 text-white font-semibold py-2 px-4 rounded-full shadow-md transition duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-emerald-400" data-bird-id="weka-content">Weka</button>
-            <button class="bird-nav-btn bg-emerald-500 hover:bg-emerald-600 text-white font-semibold py-2 px-4 rounded-full shadow-md transition duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-emerald-400" data-bird-id="saddleback-content">Saddleback</button>
-            <button class="bird-nav-btn bg-emerald-500 hover:bg-emerald-600 text-white font-semibold py-2 px-4 rounded-full shadow-md transition duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-emerald-400" data-bird-id="silvereye-content">Silvereye</button>
-            <button class="bird-nav-btn bg-emerald-500 hover:bg-emerald-600 text-white font-semibold py-2 px-4 rounded-full shadow-md transition duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-emerald-400" data-bird-id="robin-content">Robin</button>
-            <button class="bird-nav-btn bg-emerald-500 hover:bg-emerald-600 text-white font-semibold py-2 px-4 rounded-full shadow-md transition duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-emerald-400" data-bird-id="kea-content">Kea</button>
-            <button class="bird-nav-btn bg-emerald-500 hover:bg-emerald-600 text-white font-semibold py-2 px-4 rounded-full shadow-md transition duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-emerald-400" data-bird-id="kaka-content">Kaka</button>
-            <button class="bird-nav-btn bg-emerald-500 hover:bg-emerald-600 text-white font-semibold py-2 px-4 rounded-full shadow-md transition duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-emerald-400" data-bird-id="penguin-content">Penguin</button>
-            <button class="bird-nav-btn bg-emerald-500 hover:bg-emerald-600 text-white font-semibold py-2 px-4 rounded-full shadow-md transition duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-emerald-400" data-bird-id="takahe-content">Takahe</button>
-            <button class="bird-nav-btn bg-emerald-500 hover:bg-emerald-600 text-white font-semibold py-2 px-4 rounded-full shadow-md transition duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-emerald-400" data-bird-id="kokako-content">Kokako</button>
-            <button class="bird-nav-btn bg-emerald-500 hover:bg-emerald-600 text-white font-semibold py-2 px-4 rounded-full shadow-md transition duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-emerald-400" data-bird-id="nz-falcon-content">NZ Falcon</button>
-            <button class="bird-nav-btn bg-emerald-500 hover:bg-emerald-600 text-white font-semibold py-2 px-4 rounded-full shadow-md transition duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-emerald-400" data-bird-id="ruru-content">Ruru</button>
-            <button class="bird-nav-btn bg-emerald-500 hover:bg-emerald-600 text-white font-semibold py-2 px-4 rounded-full shadow-md transition duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-emerald-400" data-bird-id="tui-content">Tui</button>
+        {/* Year Selector - Dropdown Menu */}
+        <div className="mb-8">
+          <h2 className="text-2xl font-semibold text-gray-700 mb-4">Select Year Group:</h2>
+          <select
+            value={selectedYear}
+            onChange={handleYearChange}
+            className="px-6 py-3 rounded-full text-lg font-medium bg-gray-200 text-gray-700
+                       focus:outline-none focus:ring-4 focus:ring-blue-400 focus:ring-opacity-75
+                       transition-all duration-300 ease-in-out cursor-pointer appearance-none pr-8"
+            style={{
+              backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='currentColor'%3E%3Cpath fillRule='evenodd' d='M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z' clipRule='evenodd'%3E%3C/path%3E%3C/svg%3E")`,
+              backgroundRepeat: 'no-repeat',
+              backgroundPosition: 'right 0.75rem center',
+              backgroundSize: '1.5em 1.5em',
+            }}
+          >
+            <option value="">-- Select a Year --</option>
+            {Object.keys(spellingRulesData).map((year) => (
+              <option key={year} value={year}>
+                {year}
+              </option>
+            ))}
+          </select>
         </div>
 
-        <!-- Bird Content Area -->
-        <div class="content-area p-4 bg-lime-50 rounded-lg shadow-inner scrollable-content">
-
-            <!-- Kererū Content -->
-            <div id="kereru-content" class="bird-content active">
-                <h2 class="text-2xl sm:text-3xl font-bold text-emerald-800 mb-4">Our Native Birds: The Kererū</h2>
-                <p class="mb-4 text-gray-700">Kia ora, future bird experts! Meet the amazing Kererū, also known as the New Zealand wood pigeon. This beautiful **native** bird is **endemic** to Aotearoa, meaning it's found only here! The Kererū is very important for our forests.</p>
-
-                <h3 class="text-xl sm:text-2xl font-semibold text-emerald-700 mb-3">Where Does the Kererū Live?</h3>
-                <p class="mb-4 text-gray-700">The Kererū lives all over New Zealand! You'll find them in native forests, patches of bush, city parks, and even backyards with big trees. They love places with lots of fruit-growing trees and are often seen high in the branches.</p>
-
-                <h3 class="text-xl sm:text-2xl font-semibold text-emerald-700 mb-3">What Does the Kererū Eat?</h3>
-                <p class="mb-4 text-gray-700">Kererū love fruit! They mostly eat fruits from **native** trees like tawa, miro, and karaka. They swallow seeds whole, which helps spread them and grow new trees, keeping our forests healthy. If fruit is scarce, they might eat leaves and flowers.</p>
-
-                <h3 class="text-xl sm:text-2xl font-semibold text-emerald-700 mb-3">Five Fun Facts About the Kererū!</h3>
-                <ol class="list-decimal list-inside space-y-2 text-gray-700">
-                    <li><strong class="text-emerald-600">Big & Beautiful!</strong> The Kererū is large with stunning **plumage** – iridescent green and bronze on its back, and a bright white belly. They can swallow large fruits!</li>
-                    <li><strong class="text-emerald-600">Forest Gardeners:</strong> Kererū help new trees grow by spreading seeds, earning them the nickname "gardeners of the forest."</li>
-                    <li><strong class="text-emerald-600">Graceful Fliers:</strong> While they might look a bit wobbly landing due to their size, they are actually very graceful in flight.</li>
-                    <li><strong class="text-emerald-600">Daytime Bird:</strong> The Kererū is **diurnal**, meaning it's active during the day. You'll see them flying or feeding then, unlike **nocturnal** birds like the kiwi.</li>
-                    <li><strong class="text-emerald-600">Needs Our Help:</strong> Kererū face challenges from predators and habitat loss. While not as **endangered** as some birds, protecting them is vital!</li>
-                </ol>
+        {/* Rule Selection List */}
+        {selectedYear && availableRules.length > 0 && (
+          <div className="mb-8 p-6 bg-purple-50 rounded-xl border-2 border-purple-200 shadow-inner text-left">
+            <h2 className="text-2xl font-semibold text-purple-800 mb-4">Select Rules for {selectedYear}:</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+              {availableRules.map((rule) => (
+                <label key={rule.id} className="flex items-center space-x-2 cursor-pointer p-2 rounded-lg hover:bg-purple-100 transition-colors duration-200">
+                  <input
+                    type="checkbox"
+                    checked={selectedRuleIds[rule.id] || false}
+                    onChange={() => handleRuleToggle(rule.id)}
+                    className="form-checkbox h-5 w-5 text-purple-600 rounded focus:ring-purple-500"
+                  />
+                  <span className="text-lg text-gray-800 font-medium">{rule.rule}</span>
+                </label>
+              ))}
             </div>
+          </div>
+        )}
 
-            <!-- Fantail Content -->
-            <div id="fantail-content" class="bird-content">
-                <h2 class="text-2xl sm:text-3xl font-bold text-emerald-800 mb-4">Our Native Birds: The Fantail (Pīwakawaka)</h2>
-                <p class="mb-4 text-gray-700">Kia ora! Get ready to meet one of New Zealand's most friendly and common **native** birds – the Fantail, or Pīwakawaka! These tiny birds are famous for their quick, zippy flights and beautiful fanned tails.</p>
+        {/* Rule Display Area */}
+        {hasSelectedRules && currentRule ? (
+          <div className="mb-8 p-6 bg-blue-50 rounded-xl border-2 border-blue-200 shadow-inner">
+            {/* Sound Rule Display Card (e.g., 'ea', 'ey', 'wr', 'kn') */}
+            {currentDisplaySound && (
+              <div className="bg-yellow-200 text-yellow-900 p-6 rounded-lg shadow-md mb-6 border-2 border-yellow-300">
+                <p className="text-6xl font-extrabold text-center" style={{ fontFamily: "'Edu NSW ACT Foundation', cursive" }}>{currentDisplaySound}</p>
+              </div>
+            )}
 
-                <h3 class="text-xl sm:text-2xl font-semibold text-emerald-700 mb-3">Where Does the Fantail Live?</h3>
-                <p class="mb-4 text-gray-700">Fantails are found all over New Zealand, from native forests to suburban gardens and parks. They prefer bushy areas where there are plenty of trees and shrubs to hunt for insects. You'll often see them flitting around close to people!</p>
-
-                <h3 class="text-xl sm:text-2xl font-semibold text-emerald-700 mb-3">What Does the Fantail Eat?</h3>
-                <p class="mb-4 text-gray-700">Fantails are insect-eaters! They are incredibly agile flyers and catch insects in mid-air. They love to follow people or animals through the bush, catching the tiny bugs that get stirred up. Their quick movements help them grab their food!</p>
-
-                <h3 class="text-xl sm:text-2xl font-semibold text-emerald-700 mb-3">Five Fun Facts About the Fantail!</h3>
-                <ol class="list-decimal list-inside space-y-2 text-gray-700">
-                    <li><strong class="text-emerald-600">Fan-tastic Tail:</strong> Their most famous feature is their wide, fanned tail, which they use like a rudder to help them make quick turns while flying and catching insects.</li>
-                    <li><strong class="text-emerald-600">Friendly Fliers:</strong> Fantails are known for being very curious and will often fly quite close to people.</li>
-                    <li><strong class="text-emerald-600">Many Eggs:</strong> Female fantails can lay up to five clutches of eggs in a single breeding season, which is a lot for a small bird!</li>
-                    <li><strong class="text-emerald-600">Busy as a Bee:</strong> These birds are rarely still! Their active, darting flight helps them catch their insect prey, and they are busy from dawn till dusk.</li>
-                    <li><strong class="text-emerald-600">Different Plumage:</strong> While most fantails are grey-brown with a white belly, some are completely black. These darker ones are mostly found in the South Island.</li>
-                </ol>
+            {/* Enlarged and bold spelling rule heading in a soft red box */}
+            <div className="bg-red-100 text-red-800 p-4 rounded-lg shadow-md mb-6">
+              <h3 className="text-4xl font-extrabold">
+                {currentRule.rule}
+              </h3>
             </div>
-
-            <!-- Pukeko Content -->
-            <div id="pukeko-content" class="bird-content">
-                <h2 class="text-2xl sm:text-3xl font-bold text-emerald-800 mb-4">Our Native Birds: The Pukeko</h2>
-                <p class="mb-4 text-gray-700">Kia ora! Let's learn about the Pukeko, a colourful and often seen **native** bird in New Zealand. With its bright blue **plumage** and bold red beak, it's hard to miss this bird!</p>
-
-                <h3 class="text-xl sm:text-2xl font-semibold text-emerald-700 mb-3">Where Does the Pukeko Live?</h3>
-                <p class="mb-4 text-gray-700">Pukeko love wetlands! You'll find them near swamps, marshes, lakes, rivers, and even damp grassy paddocks. They are common throughout New Zealand, especially in areas with long grass or reeds where they can hide and build their nests.</p>
-
-                <h3 class="text-xl sm:text-2xl font-semibold text-emerald-700 mb-3">What Does the Pukeko Eat?</h3>
-                <p class="mb-4 text-gray-700">Pukeko are mostly vegetarian, eating a lot of soft shoots and leaves from wetland plants, grasses, and seeds. But they are also opportunistic, meaning they will sometimes eat insects, eggs, or even small chicks if they get the chance!</p>
-
-                <h3 class="text-xl sm:text-2xl font-semibold text-emerald-700 mb-3">Five Fun Facts About the Pukeko!</h3>
-                <ol class="list-decimal list-inside space-y-2 text-gray-700">
-                    <li><strong class="text-emerald-600">Long Toes:</strong> Pukeko have long, strong toes that help them walk easily over floating plants and soft mud in their wetland homes.</li>
-                    <li><strong class="text-emerald-600">Super Swimmers:</strong> Even though they look like land birds, Pukeko are actually very good swimmers and can dive underwater if they need to escape danger.</li>
-                    <li><strong class="text-emerald-600">Shared Nests:</strong> Pukeko often share nests and duties! Several females might lay eggs in the same nest, and many adults will help look after the chicks.</li>
-                    <li><strong class="text-emerald-600">Nocturnal or Diurnal?:</strong> While mostly active during the day (**diurnal**), Pukeko can also be active at night (**nocturnal**) if they need to find food or if they feel safer from predators.</li>
-                    <li><strong class="text-emerald-600">Not Endemic:</strong> While common in NZ, Pukeko are not **endemic**. They are found in many places around the world, including Australia and Southeast Asia.</li>
-                </ol>
+            <div className="flex flex-wrap justify-center gap-4 p-4 bg-white rounded-lg border border-gray-300 shadow-md">
+              {currentRule.words.map((word, index) => (
+                <div
+                  key={index}
+                  // Enlarged text, black color, simple font, and clear separation
+                  className="px-6 py-3 bg-indigo-100 text-black text-4xl font-normal rounded-lg shadow-sm
+                             border border-indigo-200 flex items-center justify-center min-w-[120px]"
+                  style={{ fontFamily: "'Edu NSW ACT Foundation', cursive" }}
+                >
+                  {word}
+                </div>
+              ))}
             </div>
-
-            <!-- White Heron Content -->
-            <div id="white-heron-content" class="bird-content">
-                <h2 class="text-2xl sm:text-3xl font-bold text-emerald-800 mb-4">Our Native Birds: The White Heron (Kōtuku)</h2>
-                <p class="mb-4 text-gray-700">Kia ora! Let's discover the elegant White Heron, or Kōtuku, one of New Zealand's most beautiful and rare **native** birds. Its pure white **plumage** makes it a stunning sight to behold!</p>
-
-                <h3 class="text-xl sm:text-2xl font-semibold text-emerald-700 mb-3">Where Does the White Heron Live?</h3>
-                <p class="mb-4 text-gray-700">The Kōtuku is quite special. Almost all of them breed in just one place in New Zealand: on the Waitangiroto River in Westland, South Island! After breeding, they spread out across the country, visiting many wetlands, estuaries, and shallow coastal areas before returning to their nesting site.</p>
-
-                <h3 class="text-xl sm:text-2xl font-semibold text-emerald-700 mb-3">What Does the White Heron Eat?</h3>
-                <p class="mb-4 text-gray-700">White Herons are expert fishers. They use their long legs to wade slowly through shallow water, patiently waiting to spear fish, eels, frogs, and other aquatic creatures with their sharp beaks. They are very quiet and stealthy hunters!</p>
-
-                <h3 class="text-xl sm:text-2xl font-semibold text-emerald-700 mb-3">Five Fun Facts About the White Heron!</h3>
-                <ol class="list-decimal list-inside space-y-2 text-gray-700">
-                    <li><strong class="text-emerald-600">Good Luck Symbol:</strong> The Kōtuku is highly valued in Māori culture and is seen as a symbol of rarity and beauty. To see a Kōtuku is considered a sign of good fortune.</li>
-                    <li><strong class="text-emerald-600">Rarest Bird:</strong> It's New Zealand's rarest breeding wetland bird. Its small population makes it a focus for conservation efforts, classifying it as **endangered** in some contexts.</li>
-                    <li><strong class="text-emerald-600">Breeding Feathers:</strong> During breeding season, they grow special long, delicate feathers on their backs, which were once highly prized.</li>
-                    <li><strong class="text-emerald-600">Global Traveller:</strong> While they have one main breeding spot in NZ, White Herons are actually part of a species (Great Egret) found in many parts of the world.</li>
-                    <li><strong class="text-emerald-600">Patient Hunters:</strong> They stand perfectly still for a long time, watching the water. When a fish swims close, they strike with incredible speed!</li>
-                </ol>
-            </div>
-
-            <!-- Albatross Content -->
-            <div id="albatross-content" class="bird-content">
-                <h2 class="text-2xl sm:text-3xl font-bold text-emerald-800 mb-4">Our Native Birds: The Albatross (Toroa)</h2>
-                <p class="mb-4 text-gray-700">Kia ora! Prepare to be amazed by the Albatross, or Toroa, one of the largest and most magnificent seabirds in the world! These incredible birds are a special part of New Zealand's **native** wildlife.</p>
-
-                <h3 class="text-xl sm:text-2xl font-semibold text-emerald-700 mb-3">Where Does the Albatross Live?</h3>
-                <p class="mb-4 text-gray-700">Albatrosses spend most of their lives soaring over the vast oceans, travelling thousands of kilometres. While they range across the Southern Ocean, some species, like the Northern Royal Albatross, are **endemic** breeders to New Zealand, nesting only on the Otago Peninsula and Chatham Islands. They only come to land to breed!</p>
-
-                <h3 class="text-xl sm:text-2xl font-semibold text-emerald-700 mb-3">What Does the Albatross Eat?</h3>
-                <p class="mb-4 text-gray-700">Albatrosses are expert ocean hunters. They mainly eat squid, fish, and krill that they scoop from the surface of the water while flying or sitting on the waves. They have a special gland to help them get rid of extra salt from the seawater they drink!</p>
-
-                <h3 class="text-xl sm:text-2xl font-semibold text-emerald-700 mb-3">Five Fun Facts About the Albatross!</h3>
-                <ol class="list-decimal list-inside space-y-2 text-gray-700">
-                    <li><strong class="text-emerald-600">Biggest Wingspan:</strong> Albatrosses have the largest wingspan of any bird, some reaching over 3 metres! This helps them glide effortlessly on ocean winds.</li>
-                    <li><strong class="text-emerald-600">Ocean Wanderers:</strong> They can spend years at sea without touching land, circling the globe multiple times on ocean currents.</li>
-                    <li><strong class="text-emerald-600">Long Lifespan:</strong> Albatrosses can live for a very long time, often over 60 years! The oldest known wild bird, Wisdom the Laysan Albatross, is over 70 years old!</li>
-                    <li><strong class="text-emerald-600">Slow Breeders:</strong> They only lay one egg every two years, and it takes a long time for the chick to grow big enough to fly. This makes them vulnerable to threats, making many species **endangered**.</li>
-                    <li><strong class="text-emerald-600">Distinct Plumage:</strong> Adult Royal Albatrosses have striking white **plumage** with dark wingtips, making them look majestic as they fly.</li>
-                </ol>
-            </div>
-
-            <!-- Kakariki Content -->
-            <div id="kakariki-content" class="bird-content">
-                <h2 class="text-2xl sm:text-3xl font-bold text-emerald-800 mb-4">Our Native Birds: The Kakariki</h2>
-                <p class="mb-4 text-gray-700">Kia ora! Let's chirp about the Kakariki, which means 'small parrot' in Māori. These colourful, lively parrots are a true gem among New Zealand's **native** birds, known for their bright green **plumage**.</p>
-
-                <h3 class="text-xl sm:text-2xl font-semibold text-emerald-700 mb-3">Where Does the Kakariki Live?</h3>
-                <p class="mb-4 text-gray-700">Kakariki can be found in a variety of forested habitats across New Zealand, from dense native forests to coastal scrub. While once widespread on the mainland, they are now more common on predator-free offshore islands, where they can thrive safely. They are **endemic** to NZ.</p>
-
-                <h3 class="text-xl sm:text-2xl font-semibold text-emerald-700 mb-3">What Does the Kakariki Eat?</h3>
-                <p class="mb-4 text-gray-700">Kakariki love to eat seeds, fruits, berries, nectar, and insects. They use their strong beaks to crack open seeds and extract nectar from flowers. They are important for helping to spread seeds around the forest.</p>
-
-                <h3 class="text-xl sm:text-2xl font-semibold text-emerald-700 mb-3">Five Fun Facts About the Kakariki!</h3>
-                <ol class="list-decimal list-inside space-y-2 text-gray-700">
-                    <li><strong class="text-emerald-600">Chatty Birds:</strong> Kakariki are very vocal and constantly chatter, making a distinctive "kaka-kaka" sound, which gives them their name.</li>
-                    <li><strong class="text-emerald-600">Different Kakariki:</strong> There are several types of Kakariki, including the red-crowned, yellow-crowned, and orange-fronted. The orange-fronted is particularly **endangered**.</li>
-                    <li><strong class="text-emerald-600">Ground Feeders:</strong> Unlike some parrots, Kakariki spend a lot of time feeding on the ground, searching for fallen seeds and insects.</li>
-                    <li><strong class="text-emerald-600">Quick Learners:</strong> These intelligent birds are quick to learn and can be very curious, especially if they are safe from predators.</li>
-                    <li><strong class="text-emerald-600">Hiding Nests:</strong> They nest in tree hollows, cracks in rocks, or even in old burrows, keeping their chicks safe and hidden.</li>
-                </ol>
-            </div>
-
-            <!-- Kingfisher Content -->
-            <div id="kingfisher-content" class="bird-content">
-                <h2 class="text-2xl sm:text-3xl font-bold text-emerald-800 mb-4">Our Native Birds: The Kingfisher (Kōtare)</h2>
-                <p class="mb-4 text-gray-700">Kia ora! Let's dive into the world of the Kingfisher, or Kōtare. This striking bird is a common **native** sight in New Zealand, known for its brilliant blue-green **plumage** and amazing hunting skills.</p>
-
-                <h3 class="text-xl sm:text-2xl font-semibold text-emerald-700 mb-3">Where Does the Kingfisher Live?</h3>
-                <p class="mb-4 text-gray-700">Kingfishers are found across New Zealand in a wide variety of habitats, wherever there's water with fish! This includes coastal areas, estuaries, lakes, rivers, and even damp farmland. They need a perch to sit on while they hunt and often nest in holes in banks or trees.</p>
-
-                <h3 class="text-xl sm:text-2xl font-semibold text-emerald-700 mb-3">What Does the Kingfisher Eat?</h3>
-                <p class="mb-4 text-gray-700">As their name suggests, Kingfishers eat fish, but they also eat a lot of insects, lizards, and small crabs. They hunt by diving head-first into the water or onto the ground to catch their prey with their strong, sharp beak.</p>
-
-                <h3 class="text-xl sm:text-2xl font-semibold text-emerald-700 mb-3">Five Fun Facts About the Kingfisher!</h3>
-                <ol class="list-decimal list-inside space-y-2 text-gray-700">
-                    <li><strong class="text-emerald-600">Diving Experts:</strong> They are incredible divers, able to plunge into the water at high speed to catch fish. Their eyes are designed to see clearly both above and below the water.</li>
-                    <li><strong class="text-emerald-600">Not Just Fish:</strong> Despite their name, fish make up only a small part of their diet. Insects are much more common!</li>
-                    <li><strong class="text-emerald-600">Short Legs:</strong> Kingfishers have very short legs, which aren't great for walking, but perfect for perching and diving.</li>
-                    <li><strong class="text-emerald-600">Loud Call:</strong> You'll often hear a Kingfisher before you see it, as they have a loud, rattling call.</li>
-                    <li><strong class="text-emerald-600">Nest in Tunnels:</strong> They often dig tunnels into soft earth banks to create their nests, keeping their chicks safe from predators.</li>
-                </ol>
-            </div>
-
-            <!-- Bellbird Content -->
-            <div id="bellbird-content" class="bird-content">
-                <h2 class="text-2xl sm:text-3xl font-bold text-emerald-800 mb-4">Our Native Birds: The Bellbird (Korimako)</h2>
-                <p class="mb-4 text-gray-700">Kia ora! Listen closely for the beautiful song of the Bellbird, or Korimako. This **endemic** New Zealand **native** bird is famous for its clear, bell-like calls that fill our forests with music.</p>
-
-                <h3 class="text-xl sm:text-2xl font-semibold text-emerald-700 mb-3">Where Does the Bellbird Live?</h3>
-                <p class="mb-4 text-gray-700">Bellbirds are found throughout New Zealand, though they are more common in the South Island and on predator-free offshore islands. They live in native forests, especially those with flowering trees, and can also be seen in suburban gardens if there's enough nectar to go around.</p>
-
-                <h3 class="text-xl sm:text-2xl font-semibold text-emerald-700 mb-3">What Does the Bellbird Eat?</h3>
-                <p class="mb-4 text-gray-700">Bellbirds mainly feed on nectar from flowers, using their brush-tipped tongues to collect the sweet liquid. They also eat fruit and insects. They are important pollinators, helping plants grow by carrying pollen from flower to flower.</p>
-
-                <h3 class="text-xl sm:text-2xl font-semibold text-emerald-700 mb-3">Five Fun Facts About the Bellbird!</h3>
-                <ol class="list-decimal list-inside space-y-2 text-gray-700">
-                    <li><strong class="text-emerald-600">Amazing Song:</strong> Their song is one of the most distinctive sounds in the New Zealand bush, a series of clear, ringing notes that sound like tiny bells.</li>
-                    <li><strong class="text-emerald-600">Tongue Like a Brush:</strong> They have a special tongue, split at the end and fringed, perfect for soaking up nectar.</li>
-                    <li><strong class="text-emerald-600">Fast Flappers:</strong> When feeding on flowers, their wings beat so fast you can hear a distinct whirring sound!</li>
-                    <li><strong class="text-emerald-600">Iridescent Plumage:</strong> Bellbirds have an olive-green **plumage** that can look iridescent, shimmering with blue or purple in the right light.</li>
-                    <li><strong class="text-emerald-600">Eyes on the Prize:</strong> They have bright red eyes, which stand out against their green feathers.</li>
-                </ol>
-            </div>
-
-            <!-- Weka Content -->
-            <div id="weka-content" class="bird-content">
-                <h2 class="text-2xl sm:text-3xl font-bold text-emerald-800 mb-4">Our Native Birds: The Weka</h2>
-                <p class="mb-4 text-gray-700">Kia ora! Meet the Weka, a large, curious, and flightless **endemic** New Zealand **native** bird. These bold and cheeky birds are known for their brown **plumage** and their tendency to 'borrow' shiny objects!</p>
-
-                <h3 class="text-xl sm:text-2xl font-semibold text-emerald-700 mb-3">Where Does the Weka Live?</h3>
-                <p class="mb-4 text-gray-700">Weka are found in various habitats across parts of New Zealand, from forests and sub-alpine grasslands to coastal areas and even rural gardens. They prefer areas with dense vegetation for shelter and nesting. While not as widespread as they once were, their populations are doing well in certain regions and on offshore islands.</p>
-
-                <h3 class="text-xl sm:text-2xl font-semibold text-emerald-700 mb-3">What Does the Weka Eat?</h3>
-                <p class="mb-4 text-gray-700">Weka are omnivores, meaning they eat both plants and animals. Their diet includes fruit, seeds, leaves, insects, slugs, snails, and even small reptiles, eggs, and chicks of other birds. They are very adaptable eaters!</p>
-
-                <h3 class="text-xl sm:text-2xl font-semibold text-emerald-700 mb-3">Five Fun Facts About the Weka!</h3>
-                <ol class="list-decimal list-inside space-y-2 text-gray-700">
-                    <li><strong class="text-emerald-600">Flightless Bird:</strong> Like the kiwi, the weka is a flightless bird, meaning it cannot fly. It relies on its strong legs to get around.</li>
-                    <li><strong class="text-emerald-600">Curious and Bold:</strong> Weka are famous for their curiosity and boldness. They will often approach people and investigate anything new in their environment.</li>
-                    <li><strong class="text-emerald-600">Thieves of Shiny Things:</strong> If you leave anything shiny lying around – like keys or jewellery – a Weka might just pick it up and run off with it!</li>
-                    <li><strong class="text-emerald-600">Nocturnal and Diurnal:</strong> Weka can be active during the day (**diurnal**) and at night (**nocturnal**), adapting their activity to find food and avoid danger.</li>
-                    <li><strong class="text-emerald-600">Many Calls:</strong> They have a wide range of calls, including a loud, repeated "coo-et" sound that they use to communicate with each other.</li>
-                </ol>
-            </div>
-
-            <!-- Saddleback Content -->
-            <div id="saddleback-content" class="bird-content">
-                <h2 class="text-2xl sm:text-3xl font-bold text-emerald-800 mb-4">Our Native Birds: The Saddleback (Tīeke)</h2>
-                <p class="mb-4 text-gray-700">Kia ora! Let's learn about the Saddleback, or Tīeke, a vibrant and very special **endemic** New Zealand **native** bird. They are known for their beautiful chestnut-brown "saddle" across their back, contrasting with their dark **plumage**.</p>
-
-                <h3 class="text-xl sm:text-2xl font-semibold text-emerald-700 mb-3">Where Does the Saddleback Live?</h3>
-                <p class="mb-4 text-gray-700">Saddlebacks were once widespread on mainland New Zealand but became very **endangered** due to predators. Thanks to dedicated conservation efforts, they now thrive on many predator-free offshore islands. They live in native forests, especially those with dense undergrowth.</p>
-
-                <h3 class="text-xl sm:text-2xl font-semibold text-emerald-700 mb-3">What Does the Saddleback Eat?</h3>
-                <p class="mb-4 text-gray-700">Saddlebacks are busy foragers, eating a mix of insects, nectar, and fruit. They often use their strong legs and bills to tear at bark and rotting wood to find grubs. They are also important pollinators and seed dispersers.</p>
-
-                <h3 class="text-xl sm:text-2xl font-semibold text-emerald-700 mb-3">Five Fun Facts About the Saddleback!</h3>
-                <ol class="list-decimal list-inside space-y-2 text-gray-700">
-                    <li><strong class="text-emerald-600">Resurrection Story:</strong> Saddlebacks are a great conservation success story! They were once almost extinct, but careful work has brought them back from the brink.</li>
-                    <li><strong class="text-emerald-600">Loud and Noisy:</strong> They are very vocal birds, making a wide range of loud calls, including a "chee-oo, chee-oo" that sounds like an old squeaky gate!</li>
-                    <li><strong class="text-emerald-600">Orange Wattles:</strong> They have distinctive orange wattles (fleshy growths) on either side of their beak.</li>
-                    <li><strong class="text-emerald-600">Bush "Shredders":</strong> They are known for their messy feeding habits, often tearing bark and leaving a lot of debris around when searching for food.</li>
-                    <li><strong class="text-emerald-600">Short Flights:</strong> Saddlebacks are not strong fliers and prefer to hop and clamber through the trees using their strong legs and bills.</li>
-                </ol>
-            </div>
-
-            <!-- Silvereye Content -->
-            <div id="silvereye-content" class="bird-content">
-                <h2 class="text-2xl sm:text-3xl font-bold text-emerald-800 mb-4">Our Native Birds: The Silvereye (Tauhou)</h2>
-                <p class="mb-4 text-gray-700">Kia ora! Let's discover the tiny but delightful Silvereye, or Tauhou, which means "stranger" in Māori. These little birds, with their distinctive white eye-rings, are a common **native** sight across New Zealand.</p>
-
-                <h3 class="text-xl sm:text-2xl font-semibold text-emerald-700 mb-3">Where Does the Silvereye Live?</h3>
-                <p class="mb-4 text-gray-700">Silvereyes are found in almost every habitat in New Zealand, from native forests and suburban gardens to farmlands and parks. They are highly adaptable and thrive wherever there are trees and shrubs providing food and shelter.</p>
-
-                <h3 class="text-xl sm:text-2xl font-semibold text-emerald-700 mb-3">What Does the Silvereye Eat?</h3>
-                <p class="mb-4 text-gray-700">Silvereyes are omnivores, eating a wide variety of food. They love nectar from flowers, small fruits, and especially insects. They are important pollinators and also help control insect populations in gardens.</p>
-
-                <h3 class="text-xl sm:text-2xl font-semibold text-emerald-700 mb-3">Five Fun Facts About the Silvereye!</h3>
-                <ol class="list-decimal list-inside space-y-2 text-gray-700">
-                    <li><strong class="text-emerald-600">White Eye-Ring:</strong> Their most distinctive feature is a striking ring of white feathers around each eye, which gives them their English name.</li>
-                    <li><strong class="text-emerald-600">Relatively New:</strong> Silvereyes arrived in New Zealand naturally from Australia in the 1850s. They are considered **native** because they arrived without human help, but they are not **endemic**.</li>
-                    <li><strong class="text-emerald-600">Tiny Teams:</strong> In winter, Silvereyes often gather in large flocks, moving around together to find food and keep warm.</li>
-                    <li><strong class="text-emerald-600">Sweet Tooth:</strong> They are very attracted to sugar water feeders in gardens, especially in winter when natural food sources are scarce.</li>
-                    <li><strong class="text-emerald-600">Varied Plumage:</strong> Their **plumage** is generally olive-green on top, with a greyish-white belly and a touch of yellow on their throat and flanks.</li>
-                </ol>
-            </div>
-
-            <!-- Robin Content -->
-            <div id="robin-content" class="bird-content">
-                <h2 class="text-2xl sm:text-3xl font-bold text-emerald-800 mb-4">Our Native Birds: The Robin (Toutouwai)</h2>
-                <p class="mb-4 text-gray-700">Kia ora! Let's get to know the friendly Robin, or Toutouwai, an **endemic** New Zealand **native** bird known for its curious nature and lovely song. Their bold character makes them a favourite in the bush!</p>
-
-                <h3 class="text-xl sm:text-2xl font-semibold text-emerald-700 mb-3">Where Does the Robin Live?</h3>
-                <p class="mb-4 text-gray-700">New Zealand Robins are found in native forests across the country, though often in fragmented populations. They are much more common in areas where predators like stoats and rats are controlled or absent, especially on offshore islands and protected mainland sites. They prefer dense forest floors.</p>
-
-                <h3 class="text-xl sm:text-2xl font-semibold text-emerald-700 mb-3">What Does the Robin Eat?</h3>
-                <p class="mb-4 text-gray-700">Robins are insect-eaters, feeding mainly on invertebrates like worms, spiders, and beetles that they find on the forest floor. They have excellent eyesight and often hop along the ground, watching patiently before darting to catch their prey.</p>
-
-                <h3 class="text-xl sm:text-2xl font-semibold text-emerald-700 mb-3">Five Fun Facts About the Robin!</h3>
-                <ol class="list-decimal list-inside space-y-2 text-gray-700">
-                    <li><strong class="text-emerald-600">Friendly Fliers:</strong> Robins are very trusting and will often come quite close to people, especially if you're disturbing insects on the forest floor.</li>
-                    <li><strong class="text-emerald-600">Great Singers:</strong> Male Robins have a beautiful, varied song that they use to mark their territory and attract a mate.</li>
-                    <li><strong class="text-emerald-600">Ground Hunters:</strong> They spend most of their time on the ground, searching for food. Their grey-brown **plumage** helps them blend into the leaf litter.</li>
-                    <li><strong class="text-emerald-600">Food Caches:</strong> Robins sometimes hide food for later, especially during winter when food might be harder to find.</li>
-                    <li><strong class="text-emerald-600">Threatened by Predators:</strong> Like many **endemic** NZ birds, Robins are very vulnerable to introduced predators, which is why predator control is so important for their survival.</li>
-                </ol>
-            </div>
-
-            <!-- Kea Content -->
-            <div id="kea-content" class="bird-content">
-                <h2 class="text-2xl sm:text-3xl font-bold text-emerald-800 mb-4">Our Native Birds: The Kea</h2>
-                <p class="mb-4 text-gray-700">Kia ora! Prepare to meet the Kea, the world's only alpine parrot and a truly unique **endemic** New Zealand **native** bird! Known for their incredible intelligence and mischievous nature, Kea are always full of surprises.</p>
-
-                <h3 class="text-xl sm:text-2xl font-semibold text-emerald-700 mb-3">Where Does the Kea Live?</h3>
-                <p class="mb-4 text-gray-700">Kea live in the alpine and forested areas of the South Island of New Zealand, especially in places with mountains and beech forests. They are highly adapted to cold environments and can often be seen around ski fields and national parks.</p>
-
-                <h3 class="text-xl sm:text-2xl font-semibold text-emerald-700 mb-3">What Does the Kea Eat?</h3>
-                <p class="mb-4 text-gray-700">Kea are omnivores with a very varied diet. They eat plants, fruit, seeds, insects, and nectar. They are also known to scavenge for food and have a strong curiosity that leads them to investigate anything new, sometimes including parts of cars or even people's belongings!</p>
-
-                <h3 class="text-xl sm:text-2xl font-semibold text-emerald-700 mb-3">Five Fun Facts About the Kea!</h3>
-                <ol class="list-decimal list-inside space-y-2 text-gray-700">
-                    <li><strong class="text-emerald-600">Super Smart:</strong> Kea are incredibly intelligent birds, known for their problem-solving skills and ability to figure out complex puzzles.</li>
-                    <li><strong class="text-emerald-600">Mischievous Parrots:</strong> They are famous for their playful and mischievous behaviour, often interacting with humans and their belongings, sometimes causing a bit of harmless trouble!</li>
-                    <li><strong class="text-emerald-600">Green Plumage, Red Wings:</strong> While mostly olive-green, their **plumage** hides a flash of brilliant orange-red under their wings, visible when they fly.</li>
-                    <li><strong class="text-emerald-600">Endangered Status:</strong> The Kea is an **endangered** species, facing threats from predators and human interactions. Protecting them is very important.</li>
-                    <li><strong class="text-emerald-600">Long Beak:</strong> They have a long, curved upper beak, which they use to probe for food and explore objects.</li>
-                </ol>
-            </div>
-
-            <!-- Kaka Content -->
-            <div id="kaka-content" class="bird-content">
-                <h2 class="text-2xl sm:text-3xl font-bold text-emerald-800 mb-4">Our Native Birds: The Kaka (Kākā)</h2>
-                <p class="mb-4 text-gray-700">Kia ora! Let's meet the Kaka, or Kākā, a large, noisy, and highly intelligent **endemic** New Zealand **native** parrot. They are known for their raucous calls and striking brown and red **plumage**.</p>
-
-                <h3 class="text-xl sm:text-2xl font-semibold text-emerald-700 mb-3">Where Does the Kaka Live?</h3>
-                <p class="mb-4 text-gray-700">Kaka live in native forests throughout New Zealand, though they are more common on predator-free offshore islands and in protected mainland sanctuaries. They need large areas of forest with mature trees that provide hollows for nesting and a variety of food sources.</p>
-
-                <h3 class="text-xl sm:text-2xl font-semibold text-emerald-700 mb-3">What Does the Kaka Eat?</h3>
-                <p class="mb-4 text-gray-700">Kaka are omnivores, eating a mix of nectar, fruit, seeds, sap, and insects. They have a special brush-tipped tongue for lapping up nectar and a strong beak for tearing at wood to find grubs. They are important pollinators and seed dispersers.</p>
-
-                <h3 class="text-xl sm:text-2xl font-semibold text-emerald-700 mb-3">Five Fun Facts About the Kaka!</h3>
-                <ol class="list-decimal list-inside space-y-2 text-gray-700">
-                    <li><strong class="text-emerald-600">Loud and Proud:</strong> Kaka are very noisy birds, with a wide range of squawks, screeches, and whistles that can be heard from far away.</li>
-                    <li><strong class="text-emerald-600">Bush "Drillers":</strong> They use their powerful beaks to chew holes in tree trunks to get to the sap or hidden grubs.</li>
-                    <li><strong class="text-emerald-600">Iridescent Feathers:</strong> While mainly brown, their **plumage** has flashes of red-orange under their wings and belly, and often iridescent green on their head.</li>
-                    <li><strong class="text-emerald-600">Playful Nature:</strong> Kaka are known for their playful and acrobatic antics in the trees.</li>
-                    <li><strong class="text-emerald-600">Threatened by Predators:</strong> Like the Kea, Kaka are **endangered** due to introduced predators, especially stoats and possums, which predate on their eggs and chicks.</li>
-                </ol>
-            </div>
-
-            <!-- Penguin Content (Little Blue Penguin / Kororā) -->
-            <div id="penguin-content" class="bird-content">
-                <h2 class="text-2xl sm:text-3xl font-bold text-emerald-800 mb-4">Our Native Birds: The Little Blue Penguin (Kororā)</h2>
-                <p class="mb-4 text-gray-700">Kia ora! Dive into the world of the Little Blue Penguin, or Kororā, the smallest penguin in the world and a beloved **native** bird of New Zealand! These adorable birds are **endemic** to the coasts of New Zealand and southern Australia.</p>
-
-                <h3 class="text-xl sm:text-2xl font-semibold text-emerald-700 mb-3">Where Does the Little Blue Penguin Live?</h3>
-                <p class="mb-4 text-gray-700">Kororā live along the coastlines of New Zealand and its offshore islands. They spend their days fishing at sea and come ashore at night to roost or nest in burrows, rock crevices, or under coastal vegetation. They are often found near urban areas as well.</p>
-
-                <h3 class="text-xl sm:text-2xl font-semibold text-emerald-700 mb-3">What Does the Little Blue Penguin Eat?</h3>
-                <p class="mb-4 text-gray-700">Little Blue Penguins are expert fishers! They use their powerful flippers to "fly" through the water, catching small fish, squid, and krill. They swallow their prey whole underwater.</p>
-
-                <h3 class="text-xl sm:text-2xl font-semibold text-emerald-700 mb-3">Five Fun Facts About the Little Blue Penguin!</h3>
-                <ol class="list-decimal list-inside space-y-2 text-gray-700">
-                    <li><strong class="text-emerald-600">Smallest Penguin:</strong> They stand only about 25-30 cm tall, making them the smallest of all penguin species.</li>
-                    <li><strong class="text-emerald-600">Nocturnal Landings:</strong> They are **nocturnal** on land, coming ashore under the cover of darkness to avoid predators. You might hear their unique growls and squawks at night.</li>
-                    <li><strong class="text-emerald-600">Beautiful Plumage:</strong> Their **plumage** is a distinctive slate-blue on their backs and white on their bellies, perfect camouflage in the ocean.</li>
-                    <li><strong class="text-emerald-600">Strong Swimmers:</strong> Despite their small size, they are incredibly strong swimmers and can dive to depths of 70 metres for food.</li>
-                    <li><strong class="text-emerald-600">Threats:</strong> While not globally **endangered**, local populations face threats from introduced predators, habitat loss, and being caught in fishing nets.</li>
-                </ol>
-            </div>
-
-            <!-- Takahe Content -->
-            <div id="takahe-content" class="bird-content">
-                <h2 class="text-2xl sm:text-3xl font-bold text-emerald-800 mb-4">Our Native Birds: The Takahe</h2>
-                <p class="mb-4 text-gray-700">Kia ora! Prepare to meet the magnificent Takahe, a very large, flightless, and incredibly rare **endemic** New Zealand **native** bird. It's a true survivor, brought back from the brink of extinction!</p>
-
-                <h3 class="text-xl sm:text-2xl font-semibold text-emerald-700 mb-3">Where Does the Takahe Live?</h3>
-                <p class="mb-4 text-gray-700">Takahe were once thought to be extinct but were famously rediscovered in 1948 in a remote valley in Fiordland, South Island. Today, they live in the alpine grasslands and tussock lands of Fiordland, and thanks to conservation, they have also been moved to several predator-free offshore islands and mainland sanctuaries.</p>
-
-                <h3 class="text-xl sm:text-2xl font-semibold text-emerald-700 mb-3">What Does the Takahe Eat?</h3>
-                <p class="mb-4 text-gray-700">Takahe are herbivores, meaning they primarily eat plants. They have a strong, sturdy beak that they use to strip the base of tussock grass and other plants to get to the juicy, soft parts. They are also known to eat seeds and insects occasionally.</p>
-
-                <h3 class="text-xl sm:text-2xl font-semibold text-emerald-700 mb-3">Five Fun Facts About the Takahe!</h3>
-                <ol class="list-decimal list-inside space-y-2 text-gray-700">
-                    <li><strong class="text-emerald-600">Rediscovered Wonder:</strong> The Takahe was once thought to be extinct for almost 50 years until it was dramatically rediscovered in 1948 – a real conservation success story!</li>
-                    <li><strong class="text-emerald-600">Flightless Giant:</strong> They are the largest living species of rail and are entirely flightless, relying on their strong legs to move around.</li>
-                    <li><strong class="text-emerald-600">Colourful Plumage:</strong> Takahe have stunning, vibrant **plumage** – iridescent blue and green on their head and body, with olive-green wings and a bright red frontal shield.</li>
-                    <li><strong class="text-emerald-600">Endangered but Hopeful:</strong> Takahe are still very much **endangered**, but intensive conservation efforts, including captive breeding and predator control, are helping their numbers grow.</li>
-                    <li><strong class="text-emerald-600">Long Lived:</strong> Takahe can live for a surprisingly long time, up to 20 years in the wild.</li>
-                </ol>
-            </div>
-
-            <!-- Kokako Content -->
-            <div id="kokako-content" class="bird-content">
-                <h2 class="text-2xl sm:text-3xl font-bold text-emerald-800 mb-4">Our Native Birds: The Kōkako</h2>
-                <p class="mb-4 text-gray-700">Kia ora! Let's listen to the amazing song of the Kōkako, a very special **endemic** New Zealand **native** bird. Known for its beautiful, haunting calls and unique blue wattles, the Kōkako is a treasured forest dweller.</p>
-
-                <h3 class="text-xl sm:text-2xl font-semibold text-emerald-700 mb-3">Where Does the Kōkako Live?</h3>
-                <p class="mb-4 text-gray-700">Kōkako live in native forests, preferring areas with dense canopy and good undergrowth. Historically found throughout New Zealand, they are now restricted to isolated populations on the North Island and a few predator-free offshore islands, due to being critically **endangered**.</p>
-
-                <h3 class="text-xl sm:text-2xl font-semibold text-emerald-700 mb-3">What Does the Kōkako Eat?</h3>
-                <p class="mb-4 text-gray-700">Kōkako eat a variety of food including leaves, flowers, fruit, and insects. They are very important for their role in spreading seeds and pollinating native plants, especially in the upper levels of the forest canopy.</p>
-
-                <h3 class="text-xl sm:text-2xl font-semibold text-emerald-700 mb-3">Five Fun Facts About the Kōkako!</h3>
-                <ol class="list-decimal list-inside space-y-2 text-gray-700">
-                    <li><strong class="text-emerald-600">Haunting Song:</strong> Kōkako are famous for their long, flute-like, haunting calls that echo through the forest. Each pair has a unique duet!</li>
-                    <li><strong class="text-emerald-600">Blue Wattles:</strong> They have distinctive bright blue (North Island Kōkako) or orange (South Island Kōkako – now extinct) fleshy wattles on either side of their beak.</li>
-                    <li><strong class="text-emerald-600">Ancient Bird:</strong> Kōkako are one of the oldest and most unique lineages of birds in New Zealand.</li>
-                    <li><strong class="text-emerald-600">Grey Plumage:</strong> Their **plumage** is a beautiful slate-grey, which helps them blend into the shadows of the forest.</li>
-                    <li><strong class="text-emerald-600">Slow Flyers:</strong> They are not strong fliers and prefer to clamber and hop through the trees with their strong legs.</li>
-                </ol>
-            </div>
-
-            <!-- NZ Falcon Content -->
-            <div id="nz-falcon-content" class="bird-content">
-                <h2 class="text-2xl sm:text-3xl font-bold text-emerald-800 mb-4">Our Native Birds: The New Zealand Falcon (Kārearea)</h2>
-                <p class="mb-4 text-gray-700">Kia ora! Look up to the sky for the New Zealand Falcon, or Kārearea, our only **endemic** **native** bird of prey! These powerful and incredibly fast hunters are truly majestic.</p>
-
-                <h3 class="text-xl sm:text-2xl font-semibold text-emerald-700 mb-3">Where Does the NZ Falcon Live?</h3>
-                <p class="mb-4 text-gray-700">Kārearea are found in various habitats across New Zealand, from native forests and open country to high-country tussock lands. While more common in the South Island, they are present in both islands, preferring areas where they have clear views for hunting and cliffs or tall trees for nesting.</p>
-
-                <h3 class="text-xl sm:text-2xl font-semibold text-emerald-700 mb-3">What Does the NZ Falcon Eat?</h3>
-                <p class="mb-4 text-gray-700">The New Zealand Falcon is a fierce predator. It mainly eats small birds, which it catches mid-flight with incredible speed. They also hunt insects, lizards, and small mammals. They are very important for keeping populations of other animals in balance.</p>
-
-                <h3 class="text-xl sm:text-2xl font-semibold text-emerald-700 mb-3">Five Fun Facts About the NZ Falcon!</h3>
-                <ol class="list-decimal list-inside space-y-2 text-gray-700">
-                    <li><strong class="text-emerald-600">Fastest Bird:</strong> Kārearea are the fastest birds in New Zealand, capable of reaching speeds of over 200 km/h when diving for prey!</li>
-                    <li><strong class="text-emerald-600">Amazing Hunters:</strong> They have excellent eyesight and incredible agility, allowing them to catch other birds in mid-air.</li>
-                    <li><strong class="text-emerald-600">Fearless:</strong> Despite their relatively small size, they are very courageous and will even attack much larger birds if they feel their nest is threatened.</li>
-                    <li><strong class="text-emerald-600">Brown Plumage:</strong> Their **plumage** is typically dark brown on the back with lighter, streaked undersides, providing good camouflage.</li>
-                    <li><strong class="text-emerald-600">Endangered Status:</strong> Sadly, the Kārearea is considered **endangered** due to habitat loss, human disturbance, and predation from introduced animals.</li>
-                </ol>
-            </div>
-
-            <!-- Ruru Content -->
-            <div id="ruru-content" class="bird-content">
-                <h2 class="text-2xl sm:text-3xl font-bold text-emerald-800 mb-4">Our Native Birds: The Ruru (Morepork)</h2>
-                <p class="mb-4 text-gray-700">Kia ora! Listen out for the distinctive call of the Ruru, or Morepork, New Zealand's only surviving **native** owl! This small, **nocturnal** bird is a beloved part of our night-time soundscape.</p>
-
-                <h3 class="text-xl sm:text-2xl font-semibold text-emerald-700 mb-3">Where Does the Ruru Live?</h3>
-                <p class="mb-4 text-gray-700">Ruru are found throughout New Zealand, from native forests to exotic plantations, urban parks, and even suburban gardens. They need trees for roosting during the day and for finding prey at night. They are generally an adaptable species.</p>
-
-                <h3 class="text-xl sm:text-2xl font-semibold text-emerald-700 mb-3">What Does the Ruru Eat?</h3>
-                <p class="mb-4 text-gray-700">Ruru are excellent night-time hunters. Their diet consists mainly of large insects like moths and beetles, but they will also catch small birds, mice, and even small lizards. They use their keen hearing and excellent night vision to find their prey.</p>
-
-                <h3 class="text-xl sm:text-2xl font-semibold text-emerald-700 mb-3">Five Fun Facts About the Ruru!</h3>
-                <ol class="list-decimal list-inside space-y-2 text-gray-700">
-                    <li><strong class="text-emerald-600">Famous Call:</strong> Their most common call sounds just like "more-pork!", which gives them their English name. They also have a screeching call.</li>
-                    <li><strong class="text-emerald-600">Nocturnal Hunter:</strong> Ruru are strictly **nocturnal**, meaning they are active only at night, sleeping hidden in trees during the day.</li>
-                    <li><strong class="text-emerald-600">Silent Flight:</strong> Their soft feathers allow them to fly almost silently, making them very effective hunters in the dark.</li>
-                    <li><strong class="text-emerald-600">Swivelling Head:</strong> Like all owls, Ruru can turn their heads almost all the way around to get a full view of their surroundings without moving their bodies.</li>
-                    <li><strong class="text-emerald-600">Camouflaged Plumage:</strong> Their mottled brown **plumage** helps them blend perfectly with tree bark, making them hard to spot during the day.</li>
-                </ol>
-            </div>
-
-            <!-- Tui Content -->
-            <div id="tui-content" class="bird-content">
-                <h2 class="text-2xl sm:text-3xl font-bold text-emerald-800 mb-4">Our Native Birds: The Tūī</h2>
-                <p class="mb-4 text-gray-700">Kia ora! Get ready for the Tūī, one of New Zealand's most iconic, noisy, and beautiful **endemic** **native** birds! You'll know them by their glossy iridescent **plumage** and the distinctive white tuft on their throat.</p>
-
-                <h3 class="text-xl sm:text-2xl font-semibold text-emerald-700 mb-3">Where Does the Tūī Live?</h3>
-                <p class="mb-4 text-gray-700">Tūī are found throughout New Zealand in forests, bushland, and increasingly in suburban gardens and parks, especially wherever there are flowering native trees. They are adaptable birds and can live in a variety of environments as long as there is enough food.</p>
-
-                <h3 class="text-xl sm:text-2xl font-semibold text-emerald-700 mb-3">What Does the Tūī Eat?</h3>
-                <p class="mb-4 text-gray-700">Tūī primarily feed on nectar from flowers, using their brush-tipped tongues. They are important pollinators of many native trees. They also eat fruit and insects. In gardens, they are attracted to sugar water feeders.</p>
-
-                <h3 class="text-xl sm:text-2xl font-semibold text-emerald-700 mb-3">Five Fun Facts About the Tūī!</h3>
-                <ol class="list-decimal list-inside space-y-2 text-gray-700">
-                    <li><strong class="text-emerald-600">Amazing Vocalists:</strong> Tūī have a incredibly varied and complex song, often including clicks, wheezes, creaks, and even mimicry of other birds.</li>
-                    <li><strong class="text-emerald-600">White Throat Tuft:</strong> Their most striking feature is a unique white feathery tuft on their throat, which stands out against their dark feathers.</li>
-                    <li><strong class="text-emerald-600">Iridescent Plumage:</strong> While they look black from a distance, up close their **plumage** shimmers with beautiful iridescent greens, blues, and bronzes.</li>
-                    <li><strong class="text-emerald-600">Aggressive Nectar Drinkers:</strong> Tūī can be quite aggressive towards other birds at feeding sites, especially when defending a favourite flowering tree.</li>
-                    <li><strong class="text-emerald-600">Fast Flyers:</strong> You'll often hear the noisy, whirring sound of their wings as they fly quickly through the trees.</li>
-                </ol>
-            </div>
-
-        </div>
+          </div>
+        ) : selectedYear && availableRules.length > 0 && !hasSelectedRules ? (
+          <p className="text-xl text-gray-600 mt-8">Please select at least one rule to start the randomizer.</p>
+        ) : (
+          <p className="text-xl text-gray-600 mt-8">Select a year group to view and select spelling rules.</p>
+        )}
+
+        {/* Next Rule Button */}
+        {shuffledRulesToDisplay.length > 0 && (
+          <button
+            onClick={showNextRule}
+            className="px-8 py-4 bg-green-500 text-white text-xl font-bold rounded-full shadow-lg
+                       hover:bg-green-600 transform hover:scale-105 transition-all duration-300 ease-in-out
+                       focus:outline-none focus:ring-4 focus:ring-green-400 focus:ring-opacity-75
+                       flex items-center justify-center mx-auto"
+          >
+            Next Rule
+            <svg className="ml-2 w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
+            </svg>
+          </button>
+        )}
+
+        {/* Sentence Generation Section */}
+        {currentRule && hasSelectedRules && (
+          <div className="mt-12 p-8 bg-pink-50 rounded-2xl shadow-xl border-2 border-pink-200 text-left"
+               style={{ fontFamily: "'Edu Australia VIC WA NT Hand Gothic', cursive" }}> {/* Apply font here */}
+            <h2 className="text-3xl font-extrabold text-pink-800 mb-6 text-center">Practice Sentences</h2>
+
+            <button
+              onClick={generatePracticeSentences}
+              disabled={loadingSentences} // Disable button while loading
+              className={`mb-6 px-6 py-3 text-white text-lg font-bold rounded-full shadow-md
+                         ${loadingSentences ? 'bg-gray-400 cursor-not-allowed' : 'bg-blue-500 hover:bg-blue-600 transform hover:scale-105'}
+                         transition-all duration-300 ease-in-out focus:outline-none focus:ring-4 focus:ring-blue-400 focus:ring-opacity-75 flex items-center justify-center mx-auto`}
+            >
+              {loadingSentences ? (
+                <>
+                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Generating...
+                </>
+              ) : (
+                <>
+                  Generate Sentences
+                  <svg className="ml-2 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                  </svg>
+                </>
+              )}
+            </button>
+
+            {generatedSentences ? (
+              <div> {/* No inline style here, inherits from parent */}
+                <div className="mb-4 p-4 bg-white rounded-lg shadow-sm border border-gray-300">
+                  <p className="text-2xl font-semibold text-gray-700 mb-2">Mild:</p>
+                  <p className="text-3xl text-gray-900">{generatedSentences.mild}</p>
+                </div>
+                <div className="mb-4 p-4 bg-white rounded-lg shadow-sm border border-gray-300">
+                  <p className="text-2xl font-semibold text-gray-700 mb-2">Medium:</p>
+                  <p className="text-3xl text-gray-900">{generatedSentences.medium}</p>
+                </div>
+                <div className="p-4 bg-white rounded-lg shadow-sm border border-gray-300">
+                  <p className="text-2xl font-semibold text-gray-700 mb-2">Spicy:</p>
+                  <p className="text-3xl text-gray-900">{generatedSentences.spicy}</p>
+                </div>
+              </div>
+            ) : (
+              <p className="text-xl text-gray-600 text-center">Click "Generate Sentences" to get practice sentences.</p>
+            )}
+          </div>
+        )}
+      </div>
     </div>
+  );
+};
 
-    <script>
-        // JavaScript to handle showing/hiding bird content
-        document.addEventListener('DOMContentLoaded', () => {
-            const navButtons = document.querySelectorAll('.bird-nav-btn');
-            const birdContents = document.querySelectorAll('.bird-content');
-
-            /**
-             * Shows the content for a specific bird and hides all others.
-             * @param {string} birdId The ID of the bird content div to show.
-             */
-            function showBird(birdId) {
-                // Hide all bird content sections
-                birdContents.forEach(content => {
-                    content.classList.remove('active');
-                });
-
-                // Show the selected bird content
-                const activeContent = document.getElementById(birdId);
-                if (activeContent) {
-                    activeContent.classList.add('active');
-                    // Scroll to the top of the content area for better viewing
-                    activeContent.closest('.scrollable-content').scrollTop = 0;
-                }
-            }
-
-            // Add click event listeners to all navigation buttons
-            navButtons.forEach(button => {
-                button.addEventListener('click', (event) => {
-                    const birdId = event.target.dataset.birdId;
-                    showBird(birdId);
-                });
-            });
-
-            // Initially show the Kererū content when the page loads
-            showBird('kereru-content');
-        });
-    </script>
-</body>
-</html>
+export default App;
